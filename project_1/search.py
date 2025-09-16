@@ -86,8 +86,30 @@ def depthFirstSearch(problem: SearchProblem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    """Graph-search DFS using util.Stack. Returns a list of actions."""
+    start = problem.getStartState()
+    if problem.isGoalState(start):
+        return []
+
+    fringe = util.Stack()
+    fringe.push((start, [], set()))
+    visited = set()
+
+    while not fringe.isEmpty():
+        state, path, pathVisited = fringe.pop()
+
+        if state in visited:
+            continue
+        visited.add(state)
+
+        if problem.isGoalState(state):
+            return path
+
+        for succ, action, stepCost in problem.getSuccessors(state):
+            if succ not in visited:
+                fringe.push((succ, path + [action], pathVisited | {state}))
+
+    return []  # failure (shouldn’t happen on provided layouts)
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
