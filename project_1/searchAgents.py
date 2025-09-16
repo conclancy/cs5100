@@ -295,15 +295,17 @@ class CornersProblem(search.SearchProblem):
         Returns the start state (in your state space, not the full Pacman state
         space)
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        visited_init = set()
+        if self.startingPosition in set(self.corners):
+            visited_init.add(self.startingPosition)
+        return (self.startingPosition, frozenset(visited_init))
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        _, visited = state
+        return len(visited) == 4
 
     def getSuccessors(self, state: Any):
         """
@@ -317,6 +319,8 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        (position, visited) = state
+        x, y = position
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
@@ -325,7 +329,22 @@ class CornersProblem(search.SearchProblem):
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
 
-            "*** YOUR CODE HERE ***"
+            dx, dy = Actions.directionToVector(action)
+            nx, ny = int(x + dx), int(y + dy)
+
+            # Skip walls
+            if self.walls[nx][ny]:
+                continue
+
+            nextPos = (nx, ny)
+
+            # If we reach a (new) corner, add it to the visited set
+            if nextPos in self.corners and nextPos not in visited:
+                nextVisited = frozenset(set(visited) | {nextPos})
+            else:
+                nextVisited = visited
+
+            successors.append(((nextPos, nextVisited), action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -360,8 +379,44 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
-    "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    # State is expected to be (position, visitedCorners_frozenset)
+    position, visited = state
+
+    # Remaining corners to visit
+    remaining = [c for c in corners if c not in visited]
+    if not remaining:
+        return 0
+
+    # Manhattan distance helper (lower bound on true maze distance)
+    def manhattan(a, b):
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    # Lower bound part 1: distance from current position to the nearest remaining corner
+    to_nearest = min(manhattan(position, c) for c in remaining)
+
+    # Lower bound part 2: MST cost over remaining corners using Manhattan edge weights
+    def mst_manhattan(points):
+        if len(points) <= 1:
+            return 0
+        # Prim's algorithm for tiny sets (<=4 corners)
+        in_tree = {points[0]}
+        not_in = set(points[1:])
+        total = 0
+        while not_in:
+            best_v = None
+            best_w = None
+            for u in in_tree:
+                for v in not_in:
+                    w = manhattan(u, v)
+                    if best_w is None or w < best_w:
+                        best_w = w
+                        best_v = v
+            total += best_w
+            in_tree.add(best_v)
+            not_in.remove(best_v)
+        return total
+
+    return to_nearest + mst_manhattan(remaining)
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
