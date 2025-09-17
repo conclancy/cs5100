@@ -509,8 +509,42 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    foods = foodGrid.asList()
+    if not foods:
+        return 0
+
+    # 1) Lower bound to *reach* some food from current position.
+    #    (Max Manhattan to any remaining food.)
+    #    Also record the farthest food to reuse below.
+    far_food = None
+    far_dist = -1
+    for f in foods:
+        d = util.manhattanDistance(position, f)
+        if d > far_dist:
+            far_dist = d
+            far_food = f
+    to_food_lb = far_dist  # max distance from position to any food (LB)
+
+    # If only one food remains, this is already tight.
+    if len(foods) == 1:
+        return to_food_lb
+
+    # 2) Lower bound on the *span* of remaining foods: an estimate of the
+    #    pairwise diameter using Manhattan distances. We do a 2-pass:
+    #       pick farthest from position -> A, then farthest from A -> B
+    #    The distance A--B is <= true diameter, so it's a valid lower bound.
+    A = far_food
+    B = None
+    best = -1
+    for g in foods:
+        d = util.manhattanDistance(A, g)
+        if d > best:
+            best = d
+            B = g
+    diameter_lb = best  # Manhattan(A,B)  (LB on true pairwise diameter)
+
+    # Final heuristic: max of the two independent lower bounds.
+    return max(to_food_lb, diameter_lb)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -541,7 +575,7 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return search.bfs(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -577,7 +611,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.food[x][y]
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:
     """
