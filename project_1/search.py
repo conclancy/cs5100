@@ -87,79 +87,104 @@ def depthFirstSearch(problem: SearchProblem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     """Graph-search DFS using util.Stack. Returns a list of actions."""
+    # Test if the start state is the goal
     start = problem.getStartState()
     if problem.isGoalState(start):
         return []
 
+    # Initialize the fringe for the start node
     fringe = util.Stack()
     fringe.push((start, [], set()))
+
+    # Initialize set to hold graph search info
     visited = set()
 
+    # DFS loop, pop the nearest node and test for goal
     while not fringe.isEmpty():
         state, path, pathVisited = fringe.pop()
 
+        # Skip if thi state has already been visited
         if state in visited:
             continue
         visited.add(state)
 
+        # Test to see if the current state is the goal
         if problem.isGoalState(state):
             return path
 
+        # Expand each unvisted successor
         for succ, action, stepCost in problem.getSuccessors(state):
             if succ not in visited:
                 fringe.push((succ, path + [action], pathVisited | {state}))
 
-    return []  # failure (shouldn’t happen on provided layouts)
+    # If goal is not found, the return an empty list
+    return []
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
+    # Test if the start state is the goal
     start = problem.getStartState()
     if problem.isGoalState(start):
         return []
 
+    # Initialize a queue and add the starting state 
     fringe = util.Queue()
     fringe.push((start, []))
+
+    # Initialize set to hold graph search info
     visited = set([start])
 
+    # BFS loop, pop from queue to test for goal
     while not fringe.isEmpty():
         state, path = fringe.pop()
 
+        # Test duqueued state to see if it is the goal
         if problem.isGoalState(state):
             return path
 
+        # Expand each unvisted successor 
         for succ, action, stepCost in problem.getSuccessors(state):
             if succ not in visited:
                 visited.add(succ)
                 fringe.push((succ, path + [action]))
 
+    # If goal is not found, the return an empty list
     return []
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
+    # Test if the start state is the goal
     start = problem.getStartState()
     if problem.isGoalState(start):
         return []
 
+    # Initiate a priority queue ordered by "g"
     fringe = util.PriorityQueue()
-    fringe.push((start, [], 0), 0)  # (state, path, g), priority=g
+    fringe.push((start, [], 0), 0)
+
+    # Initiate a variable to hold lowest cost for eachs tate
     best_g = {start: 0}
 
+    # UCS loop, pop from queue to test for goal
     while not fringe.isEmpty():
         state, path, g = fringe.pop()
 
-        # Skip if we’ve already found a cheaper way here
+        # Skip if we’ve already found a cheaper way to state
         if g > best_g.get(state, float('inf')):
             continue
-
+        
+        # Test current sate for goal 
         if problem.isGoalState(state):
             return path
 
+        # Relax edges and try to improve the costs of "g's" neighbors 
         for succ, action, stepCost in problem.getSuccessors(state):
             new_g = g + stepCost
             if new_g < best_g.get(succ, float('inf')):
                 best_g[succ] = new_g
                 fringe.push((succ, path + [action], new_g), new_g)
 
+    # If goal is not found, the return an empty list
     return []
 
 def nullHeuristic(state, problem=None):
@@ -171,26 +196,36 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
+    # Test if the start state is the goal
     start = problem.getStartState()
     if problem.isGoalState(start):
         return []
 
+    # Initiate a priority queue ordered by "f"
     fringe = util.PriorityQueue()
     start_h = heuristic(start, problem)
-    fringe.push((start, [], 0), start_h)  # (state, path, g), priority=f
+    fringe.push((start, [], 0), start_h)
+
+    # Initiate a variable to hold lowest cost for eachs tate
     best_g = {start: 0}
 
+    # A* loop, pop from queue to test for goal
     while not fringe.isEmpty():
         state, path, g = fringe.pop()
 
+        # Skip if we’ve already found a cheaper way to state
         if g > best_g.get(state, float('inf')):
             continue
 
+        # Test current sate for goal 
         if problem.isGoalState(state):
             return path
 
+        # Relax edges
         for succ, action, stepCost in problem.getSuccessors(state):
             new_g = g + stepCost
+
+            # try to improve the costs of "g's" neighbors 
             if new_g < best_g.get(succ, float('inf')):
                 best_g[succ] = new_g
                 f = new_g + heuristic(succ, problem)
