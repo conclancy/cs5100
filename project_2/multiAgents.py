@@ -81,7 +81,6 @@ class ReflexAgent(Agent):
         if action == Directions.STOP:
             score -= 2
 
-
         # Food feature: inverse of distance to closest food
         foodList = newFood.asList()
         if foodList:
@@ -92,7 +91,6 @@ class ReflexAgent(Agent):
         if capsules:
             closestCap = min(manhattanDistance(newPos, c) for c in capsules)
             score += 1.0 / (closestCap + 1)
-
 
         # Ghost features
         for g in newGhostStates:
@@ -107,8 +105,9 @@ class ReflexAgent(Agent):
                     score -= 10
                 score -= 0.5 / (dist + 1)
 
+        # Return successorGameState.getScore()
         return score
-        # return successorGameState.getScore()
+        
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
@@ -172,23 +171,30 @@ class MinimaxAgent(MultiAgentSearchAgent):
         numAgents = gameState.getNumAgents()
 
         def nextAgent(agentIndex):
+            """Helper function to cycle through agents"""
             return (agentIndex + 1) % numAgents
 
         def nextDepth(agentIndex, depth):
+            """Helper function to increment depth when the next agent is Pac-Man (Index = 0)"""
             return depth + 1 if nextAgent(agentIndex) == 0 else depth
 
         def isTerminal(state, agentIndex, depth):
+            """Function to stop expansion if we reach a win or lose state or the tree is fully exapanded"""
             return state.isWin() or state.isLose() or (depth == self.depth and agentIndex == 0)
 
         def minimax(state, agentIndex, depth):
+            """Recursive minimax function which returns value and best action"""
+            # Test if starting in a terminal state 
             if isTerminal(state, agentIndex, depth):
                 return self.evaluationFunction(state), None
 
+            # If no legal moves exists set state to terminal
             legal = state.getLegalActions(agentIndex)
             if not legal:
                 return self.evaluationFunction(state), None
 
-            if agentIndex == 0:  # Maximize for Pacman
+            # Maximize Pac-Man's value
+            if agentIndex == 0:
                 bestVal, bestAct = -float('inf'), None
                 for a in legal:
                     succ = state.generateSuccessor(agentIndex, a)
@@ -196,7 +202,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
                     if val > bestVal:
                         bestVal, bestAct = val, a
                 return bestVal, bestAct
-            else:  # Minimize for ghosts
+            # Minimize the value for the ghosts
+            else:  
                 bestVal, bestAct = float('inf'), None
                 for a in legal:
                     succ = state.generateSuccessor(agentIndex, a)
@@ -205,6 +212,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
                         bestVal, bestAct = val, a
                 return bestVal, bestAct
 
+        # Recurse and start the search at the root
         _, action = minimax(gameState, 0, 0)
         return action
 
@@ -220,46 +228,61 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         numAgents = gameState.getNumAgents()
 
         def nextAgent(agentIndex):
+            """Helper function to cycle through agents"""
             return (agentIndex + 1) % numAgents
 
         def nextDepth(agentIndex, depth):
+            """Helper function to increment depth when the next agent is Pac-Man (Index = 0)"""
             return depth + 1 if nextAgent(agentIndex) == 0 else depth
 
         def isTerminal(state, agentIndex, depth):
+            """Function to stop expansion if we reach a win or lose state or the tree is fully exapanded"""
             return state.isWin() or state.isLose() or (depth == self.depth and agentIndex == 0)
 
         def alphabeta(state, agentIndex, depth, alpha, beta):
+            """Recursive alpha-beta function which returns value and best action"""
+            # Test if starting in a terminal state 
             if isTerminal(state, agentIndex, depth):
                 return self.evaluationFunction(state), None
 
+            # If no legal moves exists set state to terminal
             legal = state.getLegalActions(agentIndex)
             if not legal:
                 return self.evaluationFunction(state), None
 
-            if agentIndex == 0:  # Max node
-                value, bestAct = -float('inf'), None
+            # Maximize Pac-Man's alpha
+            if agentIndex == 0:
+                value, bestAct = -9999, None
                 for a in legal:
                     succ = state.generateSuccessor(agentIndex, a)
                     childVal, _ = alphabeta(succ, nextAgent(agentIndex), nextDepth(agentIndex, depth), alpha, beta)
+                    # Update when childVal improves current value
                     if childVal > value:
                         value, bestAct = childVal, a
+                    # Prune to avoid tie
                     if value > beta:
-                        return value, bestAct  # prune on strict > to avoid tie-pruning
+                        return value, bestAct  
+                    # Tighten alpha based on max value
                     alpha = max(alpha, value)
                 return value, bestAct
-            else:  # Min node (ghost)
-                value, bestAct = float('inf'), None
+            # Minimize ghost beta
+            else:
+                value, bestAct = 9999, None
                 for a in legal:
                     succ = state.generateSuccessor(agentIndex, a)
                     childVal, _ = alphabeta(succ, nextAgent(agentIndex), nextDepth(agentIndex, depth), alpha, beta)
+                    # Update when childValue minimize current value 
                     if childVal < value:
                         value, bestAct = childVal, a
+                    # Prune to avoid tie
                     if value < alpha:
-                        return value, bestAct  # prune on strict < to avoid tie-pruning
+                        return value, bestAct
+                    # Tighten beta based on min value
                     beta = min(beta, value)
                 return value, bestAct
 
-        _, action = alphabeta(gameState, 0, 0, -float('inf'), float('inf'))
+        # Recurse and start the search at the root
+        _, action = alphabeta(gameState, 0, 0, -9999, 9999)
         return action
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -277,31 +300,39 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         numAgents = gameState.getNumAgents()
 
         def nextAgent(agentIndex):
+            """Helper function to cycle through agents"""
             return (agentIndex + 1) % numAgents
 
         def nextDepth(agentIndex, depth):
+            """Helper function to increment depth when the next agent is Pac-Man (Index = 0)"""
             return depth + 1 if nextAgent(agentIndex) == 0 else depth
 
         def isTerminal(state, agentIndex, depth):
+            """Function to stop expansion if we reach a win or lose state or the tree is fully exapanded"""
             return state.isWin() or state.isLose() or (depth == self.depth and agentIndex == 0)
 
         def expectimax(state, agentIndex, depth):
+            """Recursive expectimax which returns value and best action"""
+            # Test if starting in a terminal state 
             if isTerminal(state, agentIndex, depth):
                 return self.evaluationFunction(state), None
 
+            # If no legal moves exists set state to terminal
             legal = state.getLegalActions(agentIndex)
             if not legal:
                 return self.evaluationFunction(state), None
 
-            if agentIndex == 0:  # Max node
-                bestVal, bestAct = -float('inf'), None
+            # Maximize Pac-Man's value 
+            if agentIndex == 0:
+                bestVal, bestAct = -9999, None
                 for a in legal:
                     succ = state.generateSuccessor(agentIndex, a)
                     val, _ = expectimax(succ, nextAgent(agentIndex), nextDepth(agentIndex, depth))
                     if val > bestVal:
                         bestVal, bestAct = val, a
                 return bestVal, bestAct
-            else:  # Chance node (uniform)
+            # Minimize Ghost's values
+            else:
                 total = 0.0
                 for a in legal:
                     succ = state.generateSuccessor(agentIndex, a)
@@ -310,6 +341,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 expVal = total / float(len(legal))
                 return expVal, None
 
+        # Recurse and start the search at the root
         _, action = expectimax(gameState, 0, 0)
         return action
 
@@ -318,52 +350,79 @@ def betterEvaluationFunction(currentGameState: GameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
-    """
-    if currentGameState.isWin():
-        return float('inf')
-    if currentGameState.isLose():
-        return -float('inf')
+    DESCRIPTION: Heurisitic for the current state that valances fast food consumption,
+    safe ghost avoidance, and opportunistic capsult/scared-ghost chasing
 
+    Features calculated on current state:
+    - Use inverse-distance to create smooth gradients and avoids extreme values
+    - Base Score: start from currentGameState.getScore()
+    - Food Progress: +2.5/(d_min_food + 1) to pull Pac-Man towards the nearest dot, and 
+        -0.5 * food to reward clearing th board. Wanted higher than capsules with pressure
+        to make progress on the board.
+    - Capsules: +1.5/(d_min_capsules + 1) to move towards power pellets and -1 * Capsules
+        to encourage using them rather than orbiting. Less weight than food so Pac-Man does
+        not detour too far to reach a capsule
+    - Gosts: 
+        -- If scared: (3+.02 * scaredTimer)/(distance + 1) to chase edible ghosts
+        -- If active: strong penalty for ghost at short range, with weaker penalty further out
+    """
+    # Determine if the current state is terminal
+    if currentGameState.isWin():
+        return 9999
+    if currentGameState.isLose():
+        return -9999
+
+    # set state variables for use in function
     pos = currentGameState.getPacmanPosition()
     food = currentGameState.getFood().asList()
     capsules = currentGameState.getCapsules()
     ghosts = currentGameState.getGhostStates()
 
+    # Use build in game score to respect true wards 
     score = currentGameState.getScore()
 
-    # Food distance (closer is better)
+    # Food distance - pull toward nearest dot 
     if food:
+        # Inverse scaling to give smooth curve 
         minFood = min(manhattanDistance(pos, f) for f in food)
+        # Use weight of 2.5 to pull Pac-Man towards nearest dot
         score += 2.5 / (minFood + 1)
-        # Fewer food left is better
+        # Fewer dots left is better with presure to finish the board
         score -= 0.5 * len(food)
     else:
-        score += 10  # reward clearing all food
+        # Strong weight for clearing all dots from board
+        score += 10
 
-    # Capsules: encourage picking them up / moving closer
+    # Capsules- encourage move safely towards nearby opportunities
     if capsules:
         minCap = min(manhattanDistance(pos, c) for c in capsules)
+        # Set weight less than food to prevent detouring 
         score += 1.5 / (minCap + 1)
+        # Weight consuming over orbittng capsules 
         score -= 1.0 * len(capsules)
 
-    # Ghost interactions
+    # Ghost interactions for both scared and active states 
     for g in ghosts:
         gpos = g.getPosition()
         dist = manhattanDistance(pos, gpos)
+        # Scared ghost logic
         if g.scaredTimer > 0:
             # Approach edible ghosts; weight by remaining scared time
             score += (3.0 + 0.02 * g.scaredTimer) / (dist + 1)
+        # Active ghost logic
         else:
-            # Strong penalty for being within 1-2 tiles
+            # Strong penalty for being within 1-2 tiles. Use large score so that no 
+            # combination of positive terms creates a suicide situation for Pac-Man
             if dist <= 1:
                 score -= 100
             elif dist == 2:
                 score -= 10
-            # Mild general repulsion
+            # Mild general repulsion for active ghosts that are further away
             score -= 1.0 / (dist + 1)
 
+    # Return the final score with higher values being better for Pac-Man
     return score
 
 # Abbreviation
 better = betterEvaluationFunction
+
